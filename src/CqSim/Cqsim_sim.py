@@ -168,25 +168,28 @@ class Cqsim_sim:
                 else:
                     print("................... No existing weight files found, starting from episode 0")
 
-                policy_filename = self.weight_fn+"_policy_"+str(lastest_num)+".weights.h5"
-                predict_filename = self.weight_fn+"_predict_"+str(lastest_num)+".weights.h5"
+                policy_filename = self.weight_fn + "_policy_" + str(lastest_num) + ".weights.h5"
 
-                if policy_filename and predict_filename and os.path.exists(policy_filename) and os.path.exists(predict_filename):
+                if os.path.exists(policy_filename):
                     self.module['learning'].load_weights(self.weight_fn, lastest_num)
-                    print(f'................... Successfully loaded weights from episode {lastest_num}')
-                    print(f'................... Policy file: {policy_filename}')
+                    print(f"................... Successfully loaded weights from episode {lastest_num}")
+                    print(f"................... Policy file: {policy_filename}")
                 else:
-                    print(f'................... Weight files for episode {lastest_num} not found, starting fresh')
+                    print(f"................... Weight file for episode {lastest_num} not found, starting fresh")
             else:
                 if self.weight_num>=0:
-                    policy_filename = self.weight_fn+"_policy_"+str(self.weight_num)+".weights.h5"
-                    predict_filename = self.weight_fn+"_predict_"+str(self.weight_num)+".weights.h5"
+                    policy_filename = self.weight_fn + "_policy_" + str(self.weight_num) + ".weights.h5"
                 else:
-                    policy_filename = self.weight_fn+"_policy.weights.h5"
-                    predict_filename = self.weight_fn+"_predict.weights.h5"
-                # self.module['learning'].load_weights_complete_filename(policy_filename, predict_filename)
-                print(f'................... Non-training mode: Using weight_num={self.weight_num}')
-                print(f'................... Expected policy file: {policy_filename}')
+                    policy_filename = self.weight_fn + "_policy.weights.h5"
+
+                print(f"................... Non-training mode: Using weight_num={self.weight_num}")
+                print(f"................... Expected policy file: {policy_filename}")
+
+                if os.path.exists(policy_filename):
+                    self.module['learning'].load_weights(self.weight_fn, self.weight_num)
+                else:
+                    print("................... Weight file not found, running with random policy")
+
                 self.epsilon = 0.7
                 if self.is_training==0:
                     self.epsilon = 1
