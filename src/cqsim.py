@@ -309,6 +309,7 @@ if __name__ == "__main__":
         
     inputPara['resource_job']=0
     inputPara['resource_node']=0
+    inputPara['rl_alg']=None
     # 0:Read original file   1:Read formatted file
     
     
