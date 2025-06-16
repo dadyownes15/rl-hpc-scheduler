@@ -35,22 +35,41 @@ class ValueModel(tf.keras.Model):
 
         self.model_file = fname
 
-        # Define layers
+        # Define layers according to the DRAS paper.  The input has shape
+        # ``[2 * window_size + num_nodes, 2]``.  We first apply a ``1x2``
+        # convolution that reduces the two features per row to a single value and
+        # then feed the flattened result into two fully-connected layers.
+        self.conv = tf.keras.layers.Conv2D(
+            filters=1, kernel_size=(1, 2), activation="relu")
         self.flatten = tf.keras.layers.Flatten()
-        self.hidden_layer1 = tf.keras.layers.Dense(self.hidden_dim[0],'relu')
-        self.hidden_layer2 = tf.keras.layers.Dense(self.hidden_dim[1],'relu')
-        self.probs = tf.keras.layers.Dense(self.n_actions, activation='softmax')
+        self.hidden_layer1 = tf.keras.layers.Dense(self.hidden_dim[0], "relu")
+        self.hidden_layer2 = tf.keras.layers.Dense(self.hidden_dim[1], "relu")
+        self.probs = tf.keras.layers.Dense(self.n_actions, activation="softmax")
         
         self.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.lr))
         
-        # Build the model so weights can be loaded immediately
-        self.build((None, self.input_dim[0], self.input_dim[1]))
+        # Build the model so weights can be loaded immediately.  ``Conv2D``
+        # expects a channel dimension, so the model is built with shape
+        # ``(batch, rows, cols, 1)``.
+        self.build((None, self.input_dim[0], self.input_dim[1], 1))
 
 
         print('start value model ____________')
 
     def call(self, inputs):
-        flatten = self.flatten(inputs)
+        """Forward pass.
+
+        Parameters
+        ----------
+        inputs : tf.Tensor
+            Tensor with shape ``(batch, rows, cols)``.
+        """
+
+        # Add a channel dimension for ``Conv2D`` and apply the convolutional
+        # layer to reduce the 2-feature vectors to a single value per row.
+        x = tf.expand_dims(inputs, -1)
+        x = self.conv(x)
+        flatten = self.flatten(x)
         hidden_layer1 = self.hidden_layer1(flatten)
         hidden_layer2 = self.hidden_layer2(hidden_layer1)
         probs = self.probs(hidden_layer2)
@@ -90,7 +109,10 @@ class ValueModel(tf.keras.Model):
             G[t] = G_sum
         mean = np.mean(G)
         std = np.std(G) if np.std(G) > 0 else 1
+        # Normalise returns and scale the resulting advantage to emphasise
+        # gradients as recommended in the DRAS paper replication notes.
         G = (G - mean) / std
+        G *= 100
         
         with tf.GradientTape() as tape:
             y_pred = self(state_memory, training=True)
@@ -107,12 +129,12 @@ class ValueModel(tf.keras.Model):
 
     def load_weights(self, filename, lastest_num):
         if not self.built:
-            self.build((None, self.input_dim[0], self.input_dim[1]))
+            self.build((None, self.input_dim[0], self.input_dim[1], 1))
         super().load_weights(filename+"_policy_"+str(lastest_num)+".weights.h5")
 
     def load_weights_complete_filename(self, policy_filename, predict_filename):
         if not self.built:
-            self.build((None, self.input_dim[0], self.input_dim[1]))
+            self.build((None, self.input_dim[0], self.input_dim[1], 1))
         super().load_weights(policy_filename)
 
     def save_weights(self, filename, next_num):
