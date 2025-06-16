@@ -91,6 +91,9 @@ class ValueModel(tf.keras.Model):
         mean = np.mean(G)
         std = np.std(G) if np.std(G) > 0 else 1
         G = (G - mean) / std
+        # Scale the advantage so the optimiser sees gradients
+        # that stand out from the noise as suggested in DRAS.
+        G *= 100
         
         with tf.GradientTape() as tape:
             y_pred = self(state_memory, training=True)

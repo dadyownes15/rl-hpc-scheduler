@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Training script replacing train.bash.
+"""Training script replacing ``train.bash``.
 
-This script iterates over jobsets and invokes ``cqsim.py`` for each one.
-It resumes from the last saved weights and periodically runs validation.
+The script iterates over jobsets, invoking ``cqsim.py`` for each episode.
+It resumes from the last saved weights, validates after each episode and
+supports early stopping once the validation reward no longer improves.
 """
 
 import argparse
@@ -74,7 +75,10 @@ def run_cqsim(jobset: Path, episode: int, training: bool) -> Path:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Train rl-scheduler with resume capability")
-    parser.add_argument("--validation_interval", type=int, default=5, help="validate every N episodes")
+    parser.add_argument("--validation_interval", type=int, default=1,
+                        help="validate every N episodes (default: 1)")
+    parser.add_argument("--patience", type=int, default=5,
+                        help="stop if validation reward does not improve for PATIENCE episodes")
     args = parser.parse_args()
 
     jobsets = (
@@ -85,6 +89,8 @@ def main() -> None:
 
     latest = find_latest_episode()
     print(f"Latest completed episode: {latest}")
+    best_val = None
+    stale_epochs = 0
 
     for idx, jobset in enumerate(jobsets[latest:], start=latest + 1):
         print(f"=== Episode {idx} ({jobset.stem}) ===")
@@ -102,6 +108,14 @@ def main() -> None:
             v_avg = average_reward(v_rew)
             if v_avg is not None:
                 print(f"Validation average reward: {v_avg:.4f}")
+                if best_val is None or v_avg > best_val:
+                    best_val = v_avg
+                    stale_epochs = 0
+                else:
+                    stale_epochs += 1
+                    if stale_epochs >= args.patience:
+                        print("Early stopping: no validation improvement")
+                        break
             else:
                 print("Validation reward file missing")
 
