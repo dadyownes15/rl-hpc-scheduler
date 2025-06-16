@@ -163,6 +163,9 @@ class ValueModel(tf.keras.Model):
         if old_action_probs is None:
             raise ValueError("old_action_probs required for PPO")
 
+        # Ensure old_action_probs is a tensor so arithmetic behaves correctly.
+        old_action_probs = tf.convert_to_tensor(old_action_probs, dtype=tf.float32)
+
         with tf.GradientTape() as tape:
             probs, values = self(states, training=True)
             values = tf.squeeze(values, axis=1)
