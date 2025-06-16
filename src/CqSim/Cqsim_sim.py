@@ -788,10 +788,7 @@ class Cqsim_sim:
 
                 time1 = time.time()
 
-                print('Time 1: get_batch_rewards_span', time1-start_train_time)
-
-
-                print('_____batch training_____')
+                print('----- batch training -----')
 
                 #print('self.state_seq',self.state_seq)
                 #print('self.action_seq',self.action_seq)
@@ -808,6 +805,8 @@ class Cqsim_sim:
                 else:
                     cost = self.module['learning'].learn(
                         self.state_seq, self.action_seq, self.reward_seq)
+
+                print(f'batch loss: {float(cost):.4f}')
 
 
                 #batch_delta = []

@@ -19,7 +19,7 @@ python train.py [--validation_interval N]
 ```
 The script iterates over jobsets from `data/jobsets/{sampled,real,synthetic}`. For each episode it calls `src/cqsim.py` and saves weights to `weights/theta/dras_theta_policy_<episode>.weights.h5`.
 
-If weight files already exist the script resumes from the latest episode. Every `N` episodes (default 5) it runs the model on `data/jobsets/validation_2023_jan.swf` and prints the average reward from the generated `.rew` files so you can track convergence.
+If weight files already exist the script resumes from the latest episode. Every `N` episodes (default 5) it runs the model on `data/jobsets/validation_2023_jan.swf` and prints the average reward from the generated `.rew` files so you can track convergence. During training batches the simulator also prints the batch loss so you can monitor learning progress.
 
 ## Validation
 To evaluate a range of weights later you can use the legacy bash script from inside `src`:

@@ -43,8 +43,8 @@ class ValueModel(tf.keras.Model):
         
         self.compile(optimizer=tf.keras.optimizers.Adam(learning_rate=self.lr))
         
-        # Build the model by calling it with some dummy data
-        # self.predict(np.random.rand(1, self.input_dim[0], self.input_dim[1]))
+        # Build the model so weights can be loaded immediately
+        self.build((None, self.input_dim[0], self.input_dim[1]))
 
 
         print('start value model ____________')
@@ -57,12 +57,14 @@ class ValueModel(tf.keras.Model):
         return probs
         
     def choose_action(self, state):
-        probabilities = self.predict(state)[0]
+        state = np.asarray(state)
+        probabilities = self(state, training=False).numpy()[0]
         action = np.random.choice(self.action_space, p=probabilities)
         return action
 
     def get_probabilities(self, state):
-        probabilities = self.predict(state)[0]
+        state = np.asarray(state)
+        probabilities = self(state, training=False).numpy()[0]
         return probabilities
 
     def store_transition(self, state, action, reward):
@@ -104,9 +106,13 @@ class ValueModel(tf.keras.Model):
         return loss
 
     def load_weights(self, filename, lastest_num):
+        if not self.built:
+            self.build((None, self.input_dim[0], self.input_dim[1]))
         super().load_weights(filename+"_policy_"+str(lastest_num)+".weights.h5")
 
     def load_weights_complete_filename(self, policy_filename, predict_filename):
+        if not self.built:
+            self.build((None, self.input_dim[0], self.input_dim[1]))
         super().load_weights(policy_filename)
 
     def save_weights(self, filename, next_num):
